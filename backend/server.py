@@ -512,6 +512,9 @@ async def create_sale(data: SaleCreate):
                                     ref_type="sale", ref_id=sale_id,
                                     note=f"Penjualan {sale_no}")
 
+    sale_doc.pop("_id", None)
+    for li in line_docs:
+        li.pop("_id", None)
     sale_doc["items"] = line_docs
     return sale_doc
 
