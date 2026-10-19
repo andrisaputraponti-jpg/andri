@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { rupiah, parseRupiahInput } from "@/lib/format";
-import { cache, isNetworkError, newClientId, queueSale } from "@/lib/offline";
+import { cache, isNetworkError, newClientId, queueSale, queueCounts } from "@/lib/offline";
 import { Search, Trash2, Plus, Minus, X, AlertTriangle, WifiOff } from "lucide-react";
 import Receipt from "@/components/Receipt";
 import PaymentPanel from "@/components/PaymentPanel";
@@ -41,9 +41,16 @@ export default function Kasir() {
 
   useEffect(() => {
     loadCatalog(); barcodeRef.current?.focus();
+    const onQueue = () => { if (!queueCounts().pending) loadCatalog(); };
+    const onOffline = () => setOfflineData(true);
     window.addEventListener("online", loadCatalog);
-    window.addEventListener("queue-changed", loadCatalog);
-    return () => { window.removeEventListener("online", loadCatalog); window.removeEventListener("queue-changed", loadCatalog); };
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("queue-changed", onQueue);
+    return () => {
+      window.removeEventListener("online", loadCatalog);
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("queue-changed", onQueue);
+    };
   }, [loadCatalog]);
   useEffect(() => { if (settings) setTax(!!settings.enable_tax && !!settings.tax_percent); }, [settings]);
 

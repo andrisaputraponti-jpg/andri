@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { rupiah, todayIso, formatTanggalWaktu } from "@/lib/format";
+import { rupiah, todayIso, formatTanggalWaktu, PAYMENT_LABELS } from "@/lib/format";
 import { Download } from "lucide-react";
 
 export default function Laporan() {
@@ -24,7 +24,7 @@ export default function Laporan() {
   const exportCsv = () => {
     if (!data) return;
     const rows = [["No Transaksi", "Waktu", "Metode", "Subtotal", "Diskon", "PPN", "Total", "Laba Kotor"]];
-    data.sales.forEach((s) => rows.push([s.sale_no, formatTanggalWaktu(s.created_at), s.payment_method || "tunai", s.subtotal, s.global_discount, s.tax, s.total, s.gross_profit]));
+    data.sales.forEach((s) => rows.push([s.sale_no, formatTanggalWaktu(s.created_at), PAYMENT_LABELS[s.payment_method || "tunai"], s.subtotal, s.global_discount, s.tax, s.total, s.gross_profit]));
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);

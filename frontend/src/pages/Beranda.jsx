@@ -62,7 +62,7 @@ export default function Beranda() {
               const max = Math.max(1, ...data.sales_trend.map((x) => x.total));
               const h = Math.max(4, (d.total / max) * 100);
               return (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                <div key={d.date} className="flex-1 h-full flex flex-col items-center justify-end gap-1">
                   <div className="w-full bg-emerald-500/90 hover:bg-emerald-600 rounded-t-md transition-all" style={{ height: `${h}%` }} title={rupiah(d.total)} />
                   <div className="text-[10px] text-slate-500 font-mono-num">{d.date.slice(5)}</div>
                 </div>

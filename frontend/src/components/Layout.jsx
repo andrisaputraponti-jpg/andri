@@ -5,7 +5,7 @@ import {
   Truck, Receipt, BarChart3, Settings, Database, Store, Scan, Printer, Clock, Barcode, Wifi, WifiOff, CloudUpload,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { cache, useConnection } from "@/lib/offline";
+import { cache, useConnection, retryFailed } from "@/lib/offline";
 import { formatTanggalLengkap, formatJam } from "@/lib/format";
 
 const NAV = [
@@ -107,9 +107,9 @@ export default function Layout() {
               </span>
             )}
             {conn.failed > 0 && (
-              <span className="pill border bg-rose-50 text-rose-700 border-rose-200" data-testid="status-failed-sync" title="Periksa data barang lalu hubungi admin">
-                {conn.failed} penjualan offline gagal dikirim
-              </span>
+              <button className="pill border bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" onClick={retryFailed} data-testid="status-failed-sync" title="Klik untuk mengirim ulang">
+                {conn.failed} penjualan offline gagal dikirim · Kirim ulang
+              </button>
             )}
             <span className="pill bg-emerald-50 text-emerald-700 border border-emerald-100" data-testid="status-scanner">
               <Scan className="h-3 w-3" /> Pemindai siap (USB)

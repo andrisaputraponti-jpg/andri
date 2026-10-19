@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import DuplicateKeyError
 import os
 import logging
 from pathlib import Path
@@ -567,7 +568,12 @@ async def create_sale(data: SaleCreate):
         "offline": data.offline,
         "note": data.note or "",
     }
-    await db.sales.insert_one(sale_doc)
+    try:
+        await db.sales.insert_one(sale_doc)
+    except DuplicateKeyError:
+        dup = await db.sales.find_one({"client_id": data.client_id}, {"_id": 0})
+        dup["items"] = await db.sale_items.find({"sale_id": dup["id"]}, {"_id": 0}).to_list(1000)
+        return dup
     for li in line_docs:
         li["sale_id"] = sale_id
         li["sale_no"] = sale_no
@@ -920,13 +926,17 @@ async def on_start():
         await db.products.create_index("code")
         await db.products.create_index("category_id")
         await db.sales.create_index("created_at")
-        await db.sales.create_index("client_id")
         await db.sale_items.create_index("sale_id")
         await db.sale_items.create_index("product_id")
         await db.purchases.create_index("created_at")
         await db.stock_movements.create_index("product_id")
         await ensure_seed()
         logger.info("Kasir backend ready")
+    except Exception as ex:
+        logger.exception("Startup error: %s", ex)
+    try:
+        await db.sales.create_index("client_id", unique=True,
+                                    partialFilterExpression={"client_id": {"$type": "string"}})
     except Exception as ex:
         logger.exception("Startup error: %s", ex)
 

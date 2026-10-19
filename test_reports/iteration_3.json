@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 3: tested the 3 new features (offline mode, QRIS/transfer payments, barcode labels) plus regression. Backend: new pytest suite of 12 tests, all pass (payment_method validation, QRIS/transfer forcing cash=total & change=0, payment_ref stored, client_id idempotency with no double stock deduction, offline=true skipping the stock and below-cost checks and keeping client_created_at, by_payment in reports and dashboard, EAN-13 '20' barcode generation with valid check digit, uniqueness, 400 on second call, 404 for an unknown product, qris_image/bank_info saved). A separate concurrency script found an idempotency race. Frontend (Playwright): Pengaturan QRIS upload, preview and bank info save PASS; Kasir Tunai/QRIS/Transfer panels PASS; QRIS checkout receipt shows a 'QRIS' line with the Ref and no Kembali line PASS; cash checkout regression PASS. Offline: scanning 899886620022 from the local cache, an OFFLINE-xxxx receipt with the offline note, the 'Offline' pill and the '1 penjualan menunggu dikirim' pill all PASS. After reconnect the pending pill cleared in about 1s, the banner disappeared, and the sales appear in Riwayat with real TRX- numbers and an 'offline' badge (PASS). Reloading while offline FAILS on the first visit (blank page, ERR_FAILED) because the service-worker cache is empty until a second online load; after one online reload, reloading offline renders fully (PASS). Label Barcode: single and bulk generation, quantity to total count, preview stickers with SVG/name/price, name/price toggles, size select and print button enabled all PASS. Laporan per-method cards and the CSV Metode column PASS. Riwayat Metode column PASS. New bug found: the Beranda 7-day trend chart bars never show.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/sales (client_id idempotency)", "issue": "Race condition: 5 concurrent POSTs with the same client_id created 2 sales (TRX-...0018 and ...0019) and deducted stock twice (50 to 48). The check is find_one followed by insert, and the client_id index is not unique. Fix: create a unique index on client_id (partialFilterExpression {client_id: {$type: 'string'}}), catch DuplicateKeyError and return the existing sale. In practice the single-tab syncing flag limits this, but a retry after a timeout or two open tabs can create duplicates."},
+      {"endpoint": "GET /api/dashboard", "issue": "by_payment is returned correctly but is not shown anywhere on the Beranda UI (informational)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Beranda 'Tren Penjualan 7 Hari' chart", "issue": "Bars are invisible even with Rp804.004 sold today. Each bar's height is a percentage, but its wrapper (`flex-1 flex flex-col items-center`) has no defined height, so the percentage resolves to 0. Fix: add `h-full justify-end` to the wrapper (or use px heights).", "selector": "Beranda.jsx line ~65", "priority": "MEDIUM"},
+      {"component": "Offline reload (service worker)", "issue": "On the first visit the SW registers on window load but does not control that page, so nothing is cached (caches empty). Reloading offline right after the first visit gives a blank page (net::ERR_FAILED). Works after one more online load. Fix: precache '/' and the bundle in the install event (cache.addAll(['/','/static/js/bundle.js', ...])) or trigger a cache fill after the SW activates. Also, respondWith(undefined) on a cache miss gives a hard network error; return a fallback Response instead.", "selector": "public/service-worker.js", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Offline sync failure handling", "issue": "syncQueue moves any non-network error (including a transient 502/503 from the ingress while the backend restarts) to the FAILED list permanently. There is no retry button or UI to resolve it, so those sales never reach the server. Suggest retrying 5xx responses and only marking 4xx as failed, and adding a 'Kirim ulang' action for status-failed-sync.", "affected_selectors": ["status-failed-sync"]},
+      {"flow": "Kasir offline banner", "issue": "pos-offline-banner only appears after a failed fetch (e.g. after the first offline checkout), not right away when the browser goes offline. The header pill does switch at once. Minor UX: also show the banner when the 'offline' event fires.", "affected_selectors": ["pos-offline-banner"]}
+    ],
+    "design_issues": [
+      {"screen": "Laporan CSV", "issues": ["Metode column holds raw keys (tunai/qris/transfer) instead of labels (Tunai/QRIS/Transfer Bank)."]},
+      {"screen": "Label Barcode", "issues": ["After 'Buat barcode untuk semua', every newly generated product is auto-set to quantity 1, so the total includes products the user may not want (it showed 4 instead of the 3 the user set). Probably intended, but worth confirming.", "At 38x25mm the 8px product name and the EAN digits are very small; acceptable for thermal labels."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_payment_offline_label.py", "/app/test_reports/pytest/pytest_iter3.xml"],
+  "action_items": [
+    "Fix the Beranda trend chart bar height (wrapper needs h-full / justify-end)",
+    "Precache the app shell in the service-worker install step so a reload while offline works right after the first visit",
+    "Make the client_id idempotency atomic (unique partial index + DuplicateKeyError handling)",
+    "Retry 5xx errors during syncQueue instead of moving them to FAILED; add a retry UI for failed offline sales",
+    "Optional: show the Kasir offline banner on the 'offline' event; use method labels in the CSV; show by_payment on Beranda"
+  ],
+  "critical_code_review_comments": [
+    "server.py create_sale: offline=true lets stock go negative (verified to -3). This is by design, but the UI should flag negative stock (Persediaan) after sync.",
+    "server.py create_sale: offline=true skips the below-cost rule as requested, but any client can send offline=true online to bypass the rules. Acceptable for a no-auth local POS; note it.",
+    "Kasir.jsx: the 'queue-changed' listener calls loadCatalog on every queue write (including each item during sync), giving N catalog refetches when N sales sync. Debounce it.",
+    "server.py is 941 lines; consider splitting routers (sales, products, reports)."
+  ],
+  "updated_files": ["/app/backend/tests/test_payment_offline_label.py"],
+  "success_rate": {"backend": "100% (12/12 pytest); 1 minor race found separately", "frontend": "~92% (all requested flows pass; offline reload fails on first visit; Beranda chart bug)"},
+  "seed_data_creation": "Test sales were created (QRIS/transfer/offline/below-cost/race) and remain in history, because sales cannot be deleted. Their TEST_ products (TEST_Pay*, TEST_Race) are soft-deleted (inactive). TEST_Label products were hard-deleted. Settings restored: qris_image='', bank_info='', store_name='Toko Serba Ada', allow_sell_below_cost=true. The barcode_seq counter is now 6.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run pytest with '-n 0' (pytest.ini adds xdist flags). There is no GET /api/products/{id}; look products up via the list. For offline Playwright tests use page.context.set_offline(True). For an offline-reload test, reload once online first so the SW caches the shell (unless the precache fix lands). Barcode 899886620022 = Indomie (stock ~113).",
+  "rca of the issue": "Beranda chart: percentage height inside a parent with no set height resolves to 0. SW offline reload: the SW registers on 'load' and uses runtime caching only; the first page load is not controlled, so '/' and bundle.js are never cached until a second online load. Idempotency race: non-atomic find-then-insert with no unique constraint on client_id."
+}

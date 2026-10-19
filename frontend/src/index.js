@@ -15,7 +15,13 @@ const queryClient = new QueryClient({
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(() => {}));
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+    navigator.serviceWorker.ready.then((reg) => {
+      const urls = ["/", ...performance.getEntriesByType("resource").map((e) => e.name)];
+      reg.active?.postMessage({ type: "precache", urls });
+    });
+  });
 }
 
 root.render(

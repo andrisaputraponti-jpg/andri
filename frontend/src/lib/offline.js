@@ -18,6 +18,13 @@ export const isNetworkError = (e) => !e?.response;
 export const newClientId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
 export const queueSale = (payload) => write(QUEUE, [...read(QUEUE), payload]);
+export const retryFailed = () => {
+  const failed = read(FAILED).map(({ error, ...rest }) => rest);
+  write(FAILED, []);
+  write(QUEUE, [...read(QUEUE), ...failed]);
+  return syncQueue();
+};
+
 export const queueCounts = () => ({ pending: read(QUEUE).length, failed: read(FAILED).length });
 
 let syncing = false;
@@ -31,7 +38,8 @@ export async function syncQueue() {
       try {
         await api.createSale({ ...item, offline: true });
       } catch (e) {
-        if (isNetworkError(e)) break;
+        const status = e?.response?.status;
+        if (isNetworkError(e) || status >= 500 || status === 408 || status === 429) break;
         write(FAILED, [...read(FAILED), { ...item, error: e?.response?.data?.detail || "Gagal" }]);
       }
       q = q.slice(1);
