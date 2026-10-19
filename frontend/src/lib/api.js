@@ -17,6 +17,7 @@ export const api = {
   productByBarcode: (bc) => http.get(`/products/by-barcode/${encodeURIComponent(bc)}`).then((r) => r.data),
   createProduct: (d) => http.post("/products", d).then((r) => r.data),
   updateProduct: (id, d) => http.put(`/products/${id}`, d).then((r) => r.data),
+  generateBarcode: (id) => http.post(`/products/${id}/generate-barcode`).then((r) => r.data),
   deleteProduct: (id) => http.delete(`/products/${id}`).then((r) => r.data),
 
   // Stock

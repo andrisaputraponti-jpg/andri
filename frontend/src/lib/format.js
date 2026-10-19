@@ -1,3 +1,5 @@
+export const PAYMENT_LABELS = { tunai: "Tunai", qris: "QRIS", transfer: "Transfer Bank" };
+
 // Format Rupiah: Rp10.000 (no decimals, dot thousand separator)
 export const rupiah = (v) => {
   const n = Math.round(Number(v) || 0);

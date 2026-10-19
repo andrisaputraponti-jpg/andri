@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { rupiah, formatTanggalWaktu } from "@/lib/format";
+import { rupiah, formatTanggalWaktu, PAYMENT_LABELS } from "@/lib/format";
 import { Printer, Download, X } from "lucide-react";
 
 function buildEscPos(sale, settings) {
@@ -31,8 +31,10 @@ function buildEscPos(sale, settings) {
   out += ESC + "!" + "\x08"; // emphasize
   out += "TOTAL".padEnd(22) + String(rupiah(sale.total)).padStart(10) + "\n";
   out += ESC + "!" + "\x00";
-  out += "Tunai".padEnd(22) + String(rupiah(sale.cash_received)).padStart(10) + "\n";
-  out += "Kembali".padEnd(22) + String(rupiah(sale.change)).padStart(10) + "\n";
+  const method = sale.payment_method || "tunai";
+  out += (PAYMENT_LABELS[method] || "Tunai").padEnd(22) + String(rupiah(sale.cash_received)).padStart(10) + "\n";
+  if (method === "tunai") out += "Kembali".padEnd(22) + String(rupiah(sale.change)).padStart(10) + "\n";
+  if (sale.payment_ref) out += `Ref: ${sale.payment_ref}\n`;
   out += "--------------------------------\n";
   out += ESC + "a" + "\x01";
   out += (settings.receipt_footer || "Terima kasih") + "\n\n\n";
@@ -74,6 +76,11 @@ export default function Receipt({ sale, settings, onClose }) {
         </div>
 
         <div className="overflow-y-auto p-5 bg-slate-50">
+          {sale.offline && (
+            <div className="mb-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" data-testid="receipt-offline-note">
+              Tersimpan offline. Nomor transaksi resmi diberikan saat data terkirim ke server.
+            </div>
+          )}
           <div className={`print-area ${paperClass} bg-white mx-auto p-3 font-receipt text-[12px] text-black leading-tight`} style={{ width: settings?.paper_size === "80mm" ? "80mm" : "58mm" }} ref={printAreaRef}>
             <div className="text-center">
               <div className="font-bold text-[14px] uppercase">{settings?.store_name || "Toko"}</div>
@@ -109,8 +116,9 @@ export default function Receipt({ sale, settings, onClose }) {
             <div className="flex justify-between font-bold text-[14px] border-t border-black pt-0.5 mt-0.5">
               <span>TOTAL</span><span>{rupiah(sale.total)}</span>
             </div>
-            <div className="flex justify-between"><span>Tunai</span><span>{rupiah(sale.cash_received)}</span></div>
-            <div className="flex justify-between"><span>Kembali</span><span>{rupiah(sale.change)}</span></div>
+            <div className="flex justify-between" data-testid="receipt-payment-method"><span>{PAYMENT_LABELS[sale.payment_method || "tunai"]}</span><span>{rupiah(sale.cash_received)}</span></div>
+            {(sale.payment_method || "tunai") === "tunai" && <div className="flex justify-between"><span>Kembali</span><span>{rupiah(sale.change)}</span></div>}
+            {sale.payment_ref && <div>Ref: {sale.payment_ref}</div>}
             <div className="border-t border-dashed border-black my-1" />
             <div className="text-center whitespace-pre-wrap">{settings?.receipt_footer || "Terima kasih"}</div>
           </div>

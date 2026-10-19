@@ -96,11 +96,19 @@ class CartItem(BaseModel):
     discount: int = 0             # diskon total untuk baris ini (Rp)
 
 
+PAYMENT_METHODS = {"tunai": "Tunai", "qris": "QRIS", "transfer": "Transfer Bank"}
+
+
 class SaleCreate(BaseModel):
     items: List[CartItem]
     global_discount: int = 0      # diskon global Rp
     tax_percent: int = 0          # 0 atau 11
     cash_received: int = 0
+    payment_method: str = "tunai"
+    payment_ref: Optional[str] = ""
+    client_id: Optional[str] = None
+    client_created_at: Optional[str] = None
+    offline: bool = False
     note: Optional[str] = ""
 
 
@@ -135,6 +143,8 @@ class SettingsModel(BaseModel):
     tax_percent: int = 11
     printer_name: str = ""
     low_stock_global: int = 5
+    qris_image: str = ""
+    bank_info: str = ""
 
 
 # ============================= HELPERS =============================
@@ -415,6 +425,29 @@ async def delete_product(pid: str):
     return {"ok": True}
 
 
+def ean13_check(d12: str) -> str:
+    total = sum(int(c) * (3 if i % 2 else 1) for i, c in enumerate(d12))
+    return str((10 - total % 10) % 10)
+
+
+@api.post("/products/{pid}/generate-barcode")
+async def generate_barcode(pid: str):
+    p = await db.products.find_one({"id": pid})
+    if not p:
+        raise HTTPException(404, "Barang tidak ditemukan")
+    if p.get("barcode"):
+        raise HTTPException(400, "Barang sudah memiliki barcode")
+    while True:
+        c = await db.counters.find_one_and_update(
+            {"_id": "barcode_seq"}, {"$inc": {"seq": 1}}, upsert=True, return_document=True)
+        d12 = f"20{c['seq']:010d}"
+        bc = d12 + ean13_check(d12)
+        if not await db.products.find_one({"barcode": bc}):
+            break
+    await db.products.update_one({"id": pid}, {"$set": {"barcode": bc, "updated_at": now_iso()}})
+    return {"barcode": bc}
+
+
 # ============================= STOCK =============================
 @api.get("/stock/movements")
 async def list_movements(product_id: Optional[str] = None, limit: int = 200):
@@ -455,6 +488,13 @@ async def adjust_stock(data: StockAdjust):
 async def create_sale(data: SaleCreate):
     if not data.items:
         raise HTTPException(400, "Keranjang kosong")
+    if data.payment_method not in PAYMENT_METHODS:
+        raise HTTPException(400, "Metode pembayaran tidak valid")
+    if data.client_id:
+        dup = await db.sales.find_one({"client_id": data.client_id}, {"_id": 0})
+        if dup:
+            dup["items"] = await db.sale_items.find({"sale_id": dup["id"]}, {"_id": 0}).to_list(1000)
+            return dup
 
     settings = await get_settings_doc()
 
@@ -467,10 +507,10 @@ async def create_sale(data: SaleCreate):
         p = await db.products.find_one({"id": it.product_id})
         if not p:
             raise HTTPException(404, f"Barang {it.name} tidak ditemukan")
-        if int(p.get("stock", 0)) < it.qty:
+        if not data.offline and int(p.get("stock", 0)) < it.qty:
             raise HTTPException(400,
                                 f"Stok {p['name']} tidak cukup (tersisa {p.get('stock',0)})")
-        if (not settings.get("allow_sell_below_cost", True)) and it.price < int(p.get("cost_price", 0)):
+        if not data.offline and (not settings.get("allow_sell_below_cost", True)) and it.price < int(p.get("cost_price", 0)):
             raise HTTPException(400,
                                 f"Harga jual {p['name']} di bawah modal (tidak diizinkan)")
         line_subtotal = it.qty * it.price - max(0, it.discount)
@@ -492,7 +532,7 @@ async def create_sale(data: SaleCreate):
     tax_percent = int(data.tax_percent) if settings.get("enable_tax") else 0
     tax = (after_disc * tax_percent) // 100 if tax_percent else 0
     total = after_disc + tax
-    cash = max(0, int(data.cash_received))
+    cash = total if data.payment_method != "tunai" else max(0, int(data.cash_received))
     if cash < total:
         raise HTTPException(400, "Uang diterima kurang dari total")
     change = cash - total
@@ -500,6 +540,11 @@ async def create_sale(data: SaleCreate):
     sale_no = await next_sale_number()
     sale_id = new_id()
     created = now_iso()
+    if data.offline and data.client_created_at:
+        try:
+            created = datetime.fromisoformat(data.client_created_at.replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
+        except ValueError:
+            pass
 
     cogs = sum(li["qty"] * li["cost_price"] for li in line_docs)
     sale_doc = {
@@ -516,6 +561,10 @@ async def create_sale(data: SaleCreate):
         "change": change,
         "cogs": cogs,
         "gross_profit": total - tax - cogs,
+        "payment_method": data.payment_method,
+        "payment_ref": data.payment_ref or "",
+        "client_id": data.client_id,
+        "offline": data.offline,
         "note": data.note or "",
     }
     await db.sales.insert_one(sale_doc)
@@ -755,6 +804,7 @@ async def dashboard(start_date: Optional[str] = None, end_date: Optional[str] = 
         "total_purchases": total_purchases,
         "best_sellers": best,
         "sales_trend": trend,
+        "by_payment": payment_breakdown(sales),
     }
 
 
@@ -792,7 +842,17 @@ async def report_sales(start_date: Optional[str] = None, end_date: Optional[str]
         "tax": sum(x.get("tax", 0) for x in sales),
     }
     return {"range": {"start": s, "end": e},
-            "totals": totals, "sales": sales, "by_category": by_cat_list}
+            "totals": totals, "sales": sales, "by_category": by_cat_list,
+            "by_payment": payment_breakdown(sales)}
+
+
+def payment_breakdown(sales):
+    out = {k: {"method": k, "label": v, "count": 0, "total": 0} for k, v in PAYMENT_METHODS.items()}
+    for x in sales:
+        m = out.get(x.get("payment_method") or "tunai", out["tunai"])
+        m["count"] += 1
+        m["total"] += x["total"]
+    return list(out.values())
 
 
 # ============================= SETTINGS =============================
@@ -860,6 +920,7 @@ async def on_start():
         await db.products.create_index("code")
         await db.products.create_index("category_id")
         await db.sales.create_index("created_at")
+        await db.sales.create_index("client_id")
         await db.sale_items.create_index("sale_id")
         await db.sale_items.create_index("product_id")
         await db.purchases.create_index("created_at")

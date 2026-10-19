@@ -12,6 +12,7 @@ import Riwayat from "@/pages/Riwayat";
 import Laporan from "@/pages/Laporan";
 import Pengaturan from "@/pages/Pengaturan";
 import Cadangkan from "@/pages/Cadangkan";
+import LabelBarcode from "@/pages/LabelBarcode";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="kategori" element={<Kategori />} />
             <Route path="persediaan" element={<Persediaan />} />
             <Route path="pembelian" element={<Pembelian />} />
+            <Route path="label" element={<LabelBarcode />} />
             <Route path="riwayat" element={<Riwayat />} />
             <Route path="laporan" element={<Laporan />} />
             <Route path="pengaturan" element={<Pengaturan />} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { rupiah, formatTanggalWaktu, todayIso } from "@/lib/format";
+import { rupiah, formatTanggalWaktu, todayIso, PAYMENT_LABELS } from "@/lib/format";
 import Receipt from "@/components/Receipt";
 import { Eye } from "lucide-react";
 
@@ -41,19 +41,20 @@ export default function Riwayat() {
 
       <div className="card overflow-hidden">
         <table className="ktp-table">
-          <thead><tr><th>No. Transaksi</th><th>Waktu</th><th className="text-right">Item</th><th className="text-right">Total</th><th className="text-right">Laba Kotor</th><th className="text-right">Aksi</th></tr></thead>
+          <thead><tr><th>No. Transaksi</th><th>Waktu</th><th>Metode</th><th className="text-right">Item</th><th className="text-right">Total</th><th className="text-right">Laba Kotor</th><th className="text-right">Aksi</th></tr></thead>
           <tbody>
             {list.map((s) => (
               <tr key={s.id} data-testid={`sale-row-${s.id}`}>
                 <td className="font-mono-num font-bold">{s.sale_no}</td>
                 <td className="text-xs font-mono-num">{formatTanggalWaktu(s.created_at)}</td>
+                <td><span className="pill bg-slate-100 text-slate-700">{PAYMENT_LABELS[s.payment_method || "tunai"]}</span>{s.offline && <span className="pill bg-amber-100 text-amber-800 ml-1">offline</span>}</td>
                 <td className="text-right font-mono-num">{s.items_count}</td>
                 <td className="text-right font-mono-num font-bold text-emerald-700">{rupiah(s.total)}</td>
                 <td className="text-right font-mono-num text-slate-600">{rupiah(s.gross_profit)}</td>
                 <td className="text-right"><button className="btn-ghost p-1.5" onClick={() => openDetail(s)} data-testid={`sale-view-${s.id}`}><Eye className="h-4 w-4" /></button></td>
               </tr>
             ))}
-            {list.length === 0 && <tr><td colSpan={6} className="text-center text-slate-500 py-8">Belum ada transaksi pada rentang ini.</td></tr>}
+            {list.length === 0 && <tr><td colSpan={7} className="text-center text-slate-500 py-8">Belum ada transaksi pada rentang ini.</td></tr>}
           </tbody>
         </table>
       </div>

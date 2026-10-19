@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ShoppingCart, Package, Tags, Warehouse,
-  Truck, Receipt, BarChart3, Settings, Database, Store, Scan, Printer, Clock,
+  Truck, Receipt, BarChart3, Settings, Database, Store, Scan, Printer, Clock, Barcode, Wifi, WifiOff, CloudUpload,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { cache, useConnection } from "@/lib/offline";
 import { formatTanggalLengkap, formatJam } from "@/lib/format";
 
 const NAV = [
@@ -14,6 +15,7 @@ const NAV = [
   { to: "/kategori", label: "Kategori Barang", icon: Tags, testid: "nav-item-kategori" },
   { to: "/persediaan", label: "Persediaan Barang", icon: Warehouse, testid: "nav-item-persediaan" },
   { to: "/pembelian", label: "Pembelian Barang", icon: Truck, testid: "nav-item-pembelian" },
+  { to: "/label", label: "Label Barcode", icon: Barcode, testid: "nav-item-label" },
   { to: "/riwayat", label: "Riwayat Penjualan", icon: Receipt, testid: "nav-item-riwayat" },
   { to: "/laporan", label: "Laporan", icon: BarChart3, testid: "nav-item-laporan" },
   { to: "/pengaturan", label: "Pengaturan", icon: Settings, testid: "nav-item-pengaturan" },
@@ -21,12 +23,13 @@ const NAV = [
 ];
 
 export default function Layout() {
-  const [settings, setSettings] = useState({ store_name: "Toko Serba Ada", printer_name: "" });
+  const [settings, setSettings] = useState(cache.get("settings", { store_name: "Toko Serba Ada", printer_name: "" }));
+  const conn = useConnection();
   const [now, setNow] = useState(new Date());
   const location = useLocation();
 
   useEffect(() => {
-    const reload = () => api.getSettings().then(setSettings).catch(() => {});
+    const reload = () => api.getSettings().then((s) => { setSettings(s); cache.set("settings", s); }).catch(() => {});
     reload();
     window.addEventListener("settings-updated", reload);
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -95,6 +98,19 @@ export default function Layout() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <span className={`pill border ${conn.online ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-200"}`} data-testid="status-connection">
+              {conn.online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />} {conn.online ? "Online" : "Offline"}
+            </span>
+            {conn.pending > 0 && (
+              <span className="pill border bg-amber-50 text-amber-800 border-amber-200" data-testid="status-pending-sync">
+                <CloudUpload className="h-3 w-3" /> {conn.pending} penjualan menunggu dikirim
+              </span>
+            )}
+            {conn.failed > 0 && (
+              <span className="pill border bg-rose-50 text-rose-700 border-rose-200" data-testid="status-failed-sync" title="Periksa data barang lalu hubungi admin">
+                {conn.failed} penjualan offline gagal dikirim
+              </span>
+            )}
             <span className="pill bg-emerald-50 text-emerald-700 border border-emerald-100" data-testid="status-scanner">
               <Scan className="h-3 w-3" /> Pemindai siap (USB)
             </span>

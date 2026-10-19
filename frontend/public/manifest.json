@@ -1,0 +1,8 @@
+{
+  "short_name": "Kasir",
+  "name": "Kasir Toko Serba Ada",
+  "start_url": "/kasir",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669"
+}

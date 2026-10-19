@@ -23,8 +23,8 @@ export default function Laporan() {
 
   const exportCsv = () => {
     if (!data) return;
-    const rows = [["No Transaksi", "Waktu", "Subtotal", "Diskon", "PPN", "Total", "Laba Kotor"]];
-    data.sales.forEach((s) => rows.push([s.sale_no, formatTanggalWaktu(s.created_at), s.subtotal, s.global_discount, s.tax, s.total, s.gross_profit]));
+    const rows = [["No Transaksi", "Waktu", "Metode", "Subtotal", "Diskon", "PPN", "Total", "Laba Kotor"]];
+    data.sales.forEach((s) => rows.push([s.sale_no, formatTanggalWaktu(s.created_at), s.payment_method || "tunai", s.subtotal, s.global_discount, s.tax, s.total, s.gross_profit]));
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -57,6 +57,19 @@ export default function Laporan() {
             <div className="card p-4"><div className="text-[11px] uppercase text-slate-500 font-bold">Laba Kotor</div><div className="text-xl font-extrabold font-mono-num text-emerald-700">{rupiah(data.totals.gross_profit)}</div></div>
             <div className="card p-4"><div className="text-[11px] uppercase text-slate-500 font-bold">Diskon</div><div className="text-xl font-extrabold font-mono-num">{rupiah(data.totals.discount)}</div></div>
             <div className="card p-4"><div className="text-[11px] uppercase text-slate-500 font-bold">PPN</div><div className="text-xl font-extrabold font-mono-num">{rupiah(data.totals.tax)}</div></div>
+          </div>
+
+          <div className="card p-5">
+            <h3 className="font-bold text-slate-800 mb-3">Penjualan per Metode Pembayaran</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {data.by_payment.map((m) => (
+                <div key={m.method} className="rounded-lg border border-slate-200 p-3" data-testid={`report-payment-${m.method}`}>
+                  <div className="text-[11px] uppercase text-slate-500 font-bold">{m.label}</div>
+                  <div className="text-lg font-extrabold font-mono-num">{rupiah(m.total)}</div>
+                  <div className="text-xs text-slate-500">{m.count} transaksi</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

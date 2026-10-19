@@ -13,6 +13,14 @@ export default function Pengaturan() {
   useEffect(() => { api.getSettings().then(setS); }, []);
   if (!s) return <div className="p-6 text-slate-500">Memuat...</div>;
 
+  const onQris = (file) => {
+    if (!file) return;
+    if (file.size > 1024 * 1024) { setMsg("Ukuran gambar QRIS maksimal 1 MB."); return; }
+    const r = new FileReader();
+    r.onload = () => setS((prev) => ({ ...prev, qris_image: r.result }));
+    r.readAsDataURL(file);
+  };
+
   const save = async () => {
     const upd = await api.updateSettings(s);
     setS(upd); setMsg("Pengaturan disimpan.");
@@ -49,6 +57,22 @@ export default function Pengaturan() {
           </Field>
         </div>
         <p className="text-xs text-slate-500">Pilih "Cetak via dialog" untuk kompatibilitas umum. Untuk perintah ESC/POS mentah, gunakan tombol "Unduh ESC/POS" pada dialog struk.</p>
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <h3 className="font-bold text-slate-800">Pembayaran Non-Tunai</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Gambar QRIS Toko">
+            <div className="mt-1 flex items-start gap-3">
+              {s.qris_image ? <img src={s.qris_image} alt="QRIS" className="h-24 w-24 object-contain border rounded" data-testid="settings-qris-preview" /> : <div className="h-24 w-24 border border-dashed rounded flex items-center justify-center text-slate-400 text-[10px] text-center">Belum ada</div>}
+              <div className="space-y-1">
+                <input type="file" accept="image/*" onChange={(e) => onQris(e.target.files?.[0])} className="text-xs" data-testid="settings-qris-upload" />
+                {s.qris_image && <button className="btn-ghost text-xs text-rose-600 px-0" onClick={() => setS({ ...s, qris_image: "" })}>Hapus gambar</button>}
+              </div>
+            </div>
+          </Field>
+          <Field label="Info Rekening Transfer"><textarea rows={4} className="input mt-1" value={s.bank_info} onChange={(e) => setS({ ...s, bank_info: e.target.value })} placeholder={"BCA 1234567890\na.n. Toko Serba Ada"} data-testid="settings-bank-info" /></Field>
+        </div>
       </div>
 
       <div className="card p-5 space-y-4">
