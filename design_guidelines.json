@@ -1,0 +1,245 @@
+{
+  "project_name": "Kasir Toko Serba Ada",
+  "app_context": "Indonesian Retail POS (Point of Sale) & Store Management Web Application (React JS + FastAPI + MongoDB)",
+  "language": "id-ID",
+  "currency_formatting": {
+    "locale": "id-ID",
+    "currency": "IDR",
+    "prefix": "Rp",
+    "sample_format": "Rp15.000",
+    "rule": "Always format money with Indonesian thousand separator (dot: '.') without decimals for whole rupiah amounts (e.g. Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val) or custom clean format `Rp${Number(val).toLocaleString('id-ID')}`)"
+  },
+  "typography": {
+    "font_family_headings": "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+    "font_family_body": "'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif",
+    "font_family_numeric_pos": "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+    "font_family_receipt": "'Courier Prime', 'Consolas', 'Courier New', monospace",
+    "font_hierarchy": {
+      "pos_grand_total": "text-4xl sm:text-5xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400",
+      "pos_change_due": "text-3xl sm:text-4xl font-bold font-mono text-emerald-700 dark:text-emerald-300",
+      "h1_page_title": "text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100",
+      "h2_section_title": "text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100",
+      "h3_card_title": "text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200",
+      "body": "text-sm text-slate-600 dark:text-slate-300",
+      "label_overline": "text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400",
+      "table_header": "text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80"
+    },
+    "guidelines": "Avoid default Inter/Roboto for titles. Use Plus Jakarta Sans (widely beloved modern standard in Indonesian tech ecosystems) combined with crisp JetBrains Mono for monetary totals, quantities, and barcode inputs."
+  },
+  "colors": {
+    "theme_archetype": "Retail Precision & High-Trust Commerce (Archetype 4 + Archetype 1 hybrid: Deep Navy Slate, Forest Emerald, warm Amber accent)",
+    "primary": {
+      "DEFAULT": "#059669",
+      "hover": "#047857",
+      "active": "#065f46",
+      "light": "#ecfdf5",
+      "foreground": "#ffffff",
+      "meaning": "Emerald Green for successful commerce, Rupiah transactions, checkout button"
+    },
+    "brand_navy": {
+      "DEFAULT": "#0f172a",
+      "sidebar": "#090d16",
+      "border": "#1e293b",
+      "active_menu": "#1e293b"
+    },
+    "neutral_light": {
+      "background": "#f8fafc",
+      "surface": "#ffffff",
+      "card": "#ffffff",
+      "border": "#e2e8f0",
+      "text_main": "#0f172a",
+      "text_muted": "#64748b"
+    },
+    "neutral_dark": {
+      "background": "#090d16",
+      "surface": "#0f172a",
+      "card": "#111827",
+      "border": "#1f2937",
+      "text_main": "#f8fafc",
+      "text_muted": "#94a3b8"
+    },
+    "accents": {
+      "warning_amber": "#f59e0b",
+      "danger_red": "#ef4444",
+      "info_blue": "#0284c7",
+      "barcode_active": "#10b981",
+      "printer_badge": "#6366f1"
+    },
+    "rules": "Never use pure #000000; neutrals are tinted with cool slate. Header and dropdowns must NOT have 100% transparent backgrounds. Keep checkout total screen high contrast (white on dark slate or emerald on cream/white)."
+  },
+  "layout_and_navigation": {
+    "structure": "Sidebar + Sticky Top Bar + Fluid Main Workspace (Split Screen on Kasir)",
+    "sidebar_menu_items": [
+      { "id": "beranda", "label": "Beranda", "icon": "LayoutDashboard", "route": "/" },
+      { "id": "kasir", "label": "Kasir (POS)", "icon": "ShoppingCart", "route": "/kasir", "badge": "F2" },
+      { "id": "produk", "label": "Daftar Barang", "icon": "Package", "route": "/barang" },
+      { "id": "kategori", "label": "Kategori Barang", "icon": "Tags", "route": "/kategori" },
+      { "id": "persediaan", "label": "Persediaan Barang", "icon": "Warehouse", "route": "/persediaan" },
+      { "id": "pembelian", "label": "Pembelian Barang", "icon": "Truck", "route": "/pembelian" },
+      { "id": "riwayat", "label": "Riwayat Penjualan", "icon": "Receipt", "route": "/riwayat" },
+      { "id": "laporan", "label": "Laporan", "icon": "BarChart3", "route": "/laporan" },
+      { "id": "pengaturan", "label": "Pengaturan", "icon": "Settings", "route": "/pengaturan" },
+      { "id": "cadangkan", "label": "Cadangkan Data", "icon": "Database", "route": "/cadangkan" }
+    ],
+    "top_bar": {
+      "elements": [
+        "Store Name & Current Shift Indicator ('Toko Serba Ada')",
+        "Live Date & Time in Indonesian (e.g. 'Senin, 13 Juli 2026 • 14:35 WIB')",
+        "Device Status Indicators (Barcode Scanner: Siap, Printer: 58mm/80mm Siap, Database: Tersambung)",
+        "Quick Action Button: 'Kasir Cepat [F2]'",
+        "Light/Dark Mode Toggle"
+      ]
+    },
+    "kasir_layout_split": {
+      "desktop_ratio": "Left 60% (Product Search & Catalog Grid) | Right 40% (Interactive Cart & Payment Drawer)",
+      "left_catalog": {
+        "header": "Barcode Input with Auto-Focus + Search by Name/SKU + Category Pills filter",
+        "grid": "High density cards with Stock badge (green > 10, amber <= 5, red 0), Price in IDR, Category tag, Add-to-cart on click"
+      },
+      "right_cart": {
+        "cart_table": "Item list with Qty (+/- / numeric input), per-item discount, subtotal, and delete button",
+        "summary_section": "Subtotal, Global Discount input (Rp / %), Tax Toggle (PPN 11%), Grand Total (Very prominent)",
+        "payment_panel": "Nominal Tunai buttons (Uang Pas, 10rb, 20rb, 50rb, 100rb, 200rb), Kembalian (Change) highlight, Bayar & Cetak Struk (F9/Enter) button"
+      }
+    }
+  },
+  "keyboard_shortcuts": {
+    "enabled": true,
+    "shortcuts": [
+      { "key": "F2", "action": "Fokus Input Barcode / Kasir" },
+      { "key": "F4", "action": "Bersihkan Keranjang (Reset)" },
+      { "key": "F8", "action": "Input Diskon Global" },
+      { "key": "F9", "action": "Buka Dialog Pembayaran / Bayar Cepat" },
+      { "key": "Enter", "action": "Konfirmasi Pembayaran / Cetak Struk" },
+      { "key": "Esc", "action": "Tutup Modal / Batal" }
+    ],
+    "ui_display": "Floating bottom or top keyboard shortcut helper ribbon visible in Kasir page"
+  },
+  "printing_and_receipt_specs": {
+    "methods": [
+      {
+        "type": "browser_dialog",
+        "description": "CSS @media print optimized for 58mm (default thermal) and 80mm thermal roll paper.",
+        "css_classes": "print:w-[58mm] print:m-0 print:p-2 font-mono text-[12px] leading-tight text-black"
+      },
+      {
+        "type": "esc_pos",
+        "description": "Raw ESC/POS command generator with options to Download .bin file or Copy raw print text for Windows Spooler / ESC/POS thermal printer daemon."
+      }
+    ],
+    "receipt_content_structure": [
+      "Store Name (Centered, Bold)",
+      "Address & Phone Number",
+      "Date, Time, Cashier Name, Receipt No: TRX-YYYYMMDD-XXXX",
+      "--------------------------------",
+      "Items List: [Item Name] [Qty x Unit Price] [Subtotal]",
+      "--------------------------------",
+      "Subtotal, Diskon, Pajak (PPN 11% jika aktif), Total",
+      "Tunai Diterima, Kembalian",
+      "--------------------------------",
+      "Footer Message: 'Terima Kasih Atas Kunjungan Anda! Barang yang sudah dibeli tidak dapat ditukar.'"
+    ]
+  },
+  "sample_seed_categories": [
+    "Sembako & Kebutuhan Pokok",
+    "Makanan & Camilan",
+    "Minuman Dingin & Hangat",
+    "Perlengkapan Rumah Tangga",
+    "Perawatan Pribadi & Sabun",
+    "Rokok & Tembakau",
+    "Alat Tulis Kantor (ATK)",
+    "Obat-Obatan Ringan"
+  ],
+  "sample_seed_products": [
+    { "name": "Beras Ramos Wangi 5kg", "barcode": "899100110001", "category": "Sembako & Kebutuhan Pokok", "cost": 64000, "price": 72000, "stock": 25, "unit": "Sak" },
+    { "name": "Minyak Goreng Bimoli 2L", "barcode": "899100110002", "category": "Sembako & Kebutuhan Pokok", "cost": 32000, "price": 37500, "stock": 40, "unit": "Pouch" },
+    { "name": "Gula Pasir Gulaku 1kg", "barcode": "899100110003", "category": "Sembako & Kebutuhan Pokok", "cost": 15500, "price": 18000, "stock": 30, "unit": "Bungkus" },
+    { "name": "Telur Ayam Negeri 1kg", "barcode": "899100110004", "category": "Sembako & Kebutuhan Pokok", "cost": 26000, "price": 29500, "stock": 18, "unit": "Kg" },
+    { "name": "Indomie Goreng Spesial 85g", "barcode": "899886620022", "category": "Makanan & Camilan", "cost": 2800, "price": 3500, "stock": 120, "unit": "Bungkus" },
+    { "name": "Teh Pucuk Harum 350ml", "barcode": "899277531102", "category": "Minuman Dingin & Hangat", "cost": 3200, "price": 4000, "stock": 48, "unit": "Botol" },
+    { "name": "Aqua Air Mineral 600ml", "barcode": "899600160026", "category": "Minuman Dingin & Hangat", "cost": 2700, "price": 3500, "stock": 60, "unit": "Botol" },
+    { "name": "Sabun Cuci Sunlight Jeruk Nipis 750ml", "barcode": "899999905221", "category": "Perlengkapan Rumah Tangga", "cost": 14000, "price": 16500, "stock": 15, "unit": "Pouch" },
+    { "name": "Deterjen Rinso Molto 770g", "barcode": "899999905222", "category": "Perlengkapan Rumah Tangga", "cost": 21000, "price": 24500, "stock": 12, "unit": "Bungkus" },
+    { "name": "Pasta Gigi Pepsodent 190g", "barcode": "899999905223", "category": "Perawatan Pribadi & Sabun", "cost": 12500, "price": 15000, "stock": 20, "unit": "Kotak" }
+  ],
+  "image_urls": {
+    "hero_and_store_banners": [
+      {
+        "category": "store_checkout_hero",
+        "url": "https://images.pexels.com/photos/4199488/pexels-photo-4199488.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Indonesian retail checkout counter atmosphere with cashier scanning groceries"
+      },
+      {
+        "category": "grocery_shelves_ambient",
+        "url": "https://images.unsplash.com/photo-1601600576337-c1d8a0d1373c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHw0fHxncm9jZXJ5JTIwc3RvcmUlMjBpdGVtc3xlbnwwfHx8fDE3OTIzOTI1NjJ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Retail shop shelves showing organized stock and goods display"
+      },
+      {
+        "category": "snack_and_beverage_shelf",
+        "url": "https://images.pexels.com/photos/38127820/pexels-photo-38127820.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Neat shelf with snacks, beverages and packaged items for retail store overview"
+      }
+    ]
+  },
+  "testing_attributes": {
+    "rule": "Every button, input, tab, filter, modal trigger, print button, and key summary metric MUST contain data-testid in kebab-case format.",
+    "required_test_ids": [
+      "nav-item-beranda",
+      "nav-item-kasir",
+      "nav-item-barang",
+      "nav-item-kategori",
+      "nav-item-persediaan",
+      "nav-item-pembelian",
+      "nav-item-riwayat",
+      "nav-item-laporan",
+      "nav-item-pengaturan",
+      "nav-item-cadangkan",
+      "pos-barcode-input",
+      "pos-search-input",
+      "pos-category-filter",
+      "pos-product-item-button",
+      "pos-cart-item-row",
+      "pos-cart-qty-input",
+      "pos-cart-delete-button",
+      "pos-global-discount-input",
+      "pos-tax-toggle",
+      "pos-grand-total-amount",
+      "pos-cash-input",
+      "pos-quick-cash-button",
+      "pos-change-amount",
+      "pos-checkout-button",
+      "pos-clear-cart-button",
+      "receipt-print-dialog-button",
+      "receipt-escpos-button",
+      "receipt-close-modal-button",
+      "product-add-new-button",
+      "product-search-input",
+      "product-table-row",
+      "product-edit-button",
+      "product-delete-button",
+      "product-import-csv-button",
+      "product-export-csv-button",
+      "stock-adjustment-button",
+      "purchase-add-button",
+      "purchase-confirm-stock-button",
+      "report-period-select",
+      "report-export-csv-button",
+      "backup-export-json-button",
+      "backup-import-json-button",
+      "settings-save-button",
+      "theme-toggle-button"
+    ]
+  },
+  "component_guidelines": {
+    "buttons": "Pill or sleek rounded-md (rounded-lg). Primary action is rich emerald (bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors active:scale-[0.98]). Danger actions use rose/red.",
+    "cards": "Subtle border (border-slate-200 dark:border-slate-800), smooth surface (bg-white dark:bg-slate-900), rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]. Avoid heavy drop shadows.",
+    "tables": "Sticky table header, compact line height for high retail density, zebra alternating subtle tint on hover, clear currency right-aligned columns.",
+    "modals": "Dialog backdrop with blur (backdrop-blur-sm bg-slate-950/40), clean white/dark-slate container with accessible close button.",
+    "badges": "Pill badges for stock levels: Stock > 10 (emerald-100 text-emerald-800), Stock 1-10 (amber-100 text-amber-800), Out of Stock (rose-100 text-rose-800)."
+  },
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "anti_ai_slop": "DO NOT use generic centered templates, generic purple gradient cards, or placeholder URLs like via.placeholder.com. Use genuine Indonesian retail context (e.g. Indomie, Bimoli, Beras, Aqua, etc.).",
+    "state_persistency": "Ensure all store data (Products, Categories, Purchases, Transactions, Settings) are synchronized with FastAPI backend and locally cached / fallback gracefully so the cashier never loses cart state even if network flickers.",
+    "speed_optimization": "Kasir (POS) screen must register item scans in under 100ms. Provide hotkeys [F2, F4, F8, F9, Enter] and maintain barcode input auto-focus when scanning."
+  }
+}

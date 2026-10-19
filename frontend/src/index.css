@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Courier+Prime:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 160 84% 32%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --accent: 160 60% 95%;
+  --accent-foreground: 160 84% 20%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 160 84% 32%;
+  --radius: 0.75rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-mono-num {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-receipt {
+  font-family: 'Courier Prime', 'Consolas', 'Courier New', monospace;
+}
+
+/* Subtle grain */
+.grain-bg {
+  background-image:
+    radial-gradient(1200px 500px at 90% -10%, rgba(16, 185, 129, 0.07), transparent 60%),
+    radial-gradient(900px 400px at -10% 10%, rgba(99, 102, 241, 0.05), transparent 60%);
+}
+
+/* Table styling helpers */
+.ktp-table { @apply w-full text-sm; }
+.ktp-table thead th {
+  @apply px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-50 border-b border-slate-200;
+}
+.ktp-table tbody td {
+  @apply px-3 py-2.5 border-b border-slate-100 text-slate-800;
+}
+.ktp-table tbody tr:hover { @apply bg-slate-50/80; }
+
+/* Pill-style button */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-primary { @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm; }
+.btn-secondary { @apply btn bg-white border border-slate-200 text-slate-800 hover:bg-slate-50; }
+.btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700; }
+.btn-ghost { @apply btn text-slate-700 hover:bg-slate-100; }
+
+.input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition;
+}
+
+.card {
+  @apply bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(15,23,42,0.04)];
+}
+
+.pill {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold;
+}
+
+/* Receipt print */
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area {
+    position: absolute;
+    left: 0; top: 0;
+    width: 58mm;
+    padding: 2mm;
+    color: #000 !important;
+    background: #fff !important;
+    font-family: 'Courier Prime', 'Consolas', monospace !important;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .print-area.paper-80 { width: 80mm; font-size: 12px; }
+  .no-print { display: none !important; }
+  @page { margin: 0; size: 58mm auto; }
+  .print-area.paper-80 ~ * { }
+}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
