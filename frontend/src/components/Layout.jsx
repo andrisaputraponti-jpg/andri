@@ -26,9 +26,11 @@ export default function Layout() {
   const location = useLocation();
 
   useEffect(() => {
-    api.getSettings().then(setSettings).catch(() => {});
+    const reload = () => api.getSettings().then(setSettings).catch(() => {});
+    reload();
+    window.addEventListener("settings-updated", reload);
     const t = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(t);
+    return () => { clearInterval(t); window.removeEventListener("settings-updated", reload); };
   }, [location.pathname]);
 
   return (

@@ -35,7 +35,7 @@ export default function Laporan() {
   return (
     <div className="p-6 space-y-4" data-testid="page-laporan">
       <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
+        <div className="shrink-0">
           <h1 className="text-2xl font-extrabold text-slate-900">Laporan</h1>
           <p className="text-sm text-slate-500">Omzet, laba kotor, dan analisis penjualan berdasarkan periode.</p>
         </div>

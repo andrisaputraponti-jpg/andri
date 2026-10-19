@@ -27,9 +27,11 @@ export default function Barang() {
       stock: parseInt(form.stock || 0, 10),
       min_stock: parseInt(form.min_stock || 0, 10),
     };
-    if (editing === "new") await api.createProduct(payload);
-    else await api.updateProduct(editing, payload);
-    setEditing(null); load();
+    try {
+      if (editing === "new") await api.createProduct(payload);
+      else await api.updateProduct(editing, payload);
+      setEditing(null); load();
+    } catch (e) { alert(e?.response?.data?.detail || "Gagal menyimpan"); }
   };
 
   const remove = async (p) => {
@@ -105,8 +107,8 @@ export default function Barang() {
                   {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </label>
-              <label className="text-xs">Harga Modal (Rp)<input className="input mt-1 font-mono-num" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: parseRupiahInput(e.target.value) })} data-testid="product-form-cost" /></label>
-              <label className="text-xs">Harga Jual (Rp)<input className="input mt-1 font-mono-num" value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: parseRupiahInput(e.target.value) })} data-testid="product-form-sale" /></label>
+              <label className="text-xs">Harga Modal (Rp)<input className="input mt-1 font-mono-num" value={Number(form.cost_price || 0).toLocaleString("id-ID")} onChange={(e) => setForm({ ...form, cost_price: parseRupiahInput(e.target.value) })} data-testid="product-form-cost" /></label>
+              <label className="text-xs">Harga Jual (Rp)<input className="input mt-1 font-mono-num" value={Number(form.sale_price || 0).toLocaleString("id-ID")} onChange={(e) => setForm({ ...form, sale_price: parseRupiahInput(e.target.value) })} data-testid="product-form-sale" /></label>
               <label className="text-xs">Stok<input type="number" className="input mt-1 font-mono-num" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} data-testid="product-form-stock" /></label>
               <label className="text-xs">Stok Minimum<input type="number" className="input mt-1 font-mono-num" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: e.target.value })} data-testid="product-form-min" /></label>
               <label className="text-xs col-span-2 flex items-center gap-2"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Aktif</label>

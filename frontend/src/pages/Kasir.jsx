@@ -298,12 +298,12 @@ export default function Kasir() {
 
           <div className="flex items-center justify-between gap-2 pt-2">
             <span className="text-sm text-slate-500">Uang Diterima</span>
-            <input ref={cashRef} className="input py-2 w-40 text-right font-mono-num text-base" value={cash.toLocaleString("id-ID")} onChange={(e) => setCash(parseRupiahInput(e.target.value))} data-testid="pos-cash-input" />
+            <input ref={cashRef} className="input py-2 w-40 text-right font-mono-num text-base" value={cash.toLocaleString("id-ID")} onChange={(e) => setCash(parseRupiahInput(e.target.value))} onKeyDown={(e) => { if (e.key === "Enter") checkout(); }} data-testid="pos-cash-input" />
           </div>
-          <div className="flex gap-1 flex-wrap">
+          <div className="grid grid-cols-6 gap-1">
             {QUICK_CASH.map((v, i) => (
-              <button key={i} onClick={() => setCash(v === 0 ? totals.total : v)} className="btn-secondary text-xs py-1 px-2" data-testid={`pos-quick-cash-${v}`}>
-                {v === 0 ? "Uang Pas" : rupiah(v)}
+              <button key={i} onClick={() => setCash(v === 0 ? totals.total : v)} className="btn-secondary text-[11px] py-1 px-1 whitespace-nowrap" data-testid={`pos-quick-cash-${v}`}>
+                {v === 0 ? "Uang Pas" : `${v / 1000}rb`}
               </button>
             ))}
           </div>

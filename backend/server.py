@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
+import re
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -195,6 +196,22 @@ async def record_stock_movement(product_id: str, delta: int, reason: str,
     await db.stock_movements.insert_one(doc)
 
 
+async def ensure_unique(code, barcode, exclude_id=None):
+    ex = {"id": {"$ne": exclude_id}} if exclude_id else {}
+    if code and await db.products.find_one({"code": code, **ex}):
+        raise HTTPException(400, f"Kode {code} sudah dipakai barang lain")
+    bc = (barcode or "").strip()
+    if bc and await db.products.find_one({"barcode": bc, **ex}):
+        raise HTTPException(400, f"Barcode {bc} sudah dipakai barang lain")
+
+
+async def next_product_code() -> str:
+    n = await db.products.count_documents({}) + 1
+    while await db.products.find_one({"code": f"P{n:04d}"}):
+        n += 1
+    return f"P{n:04d}"
+
+
 # ============================= SEEDING =============================
 SEED_CATEGORIES = [
     "Sembako & Kebutuhan Pokok",
@@ -303,10 +320,11 @@ async def list_products(q: Optional[str] = None, category_id: Optional[str] = No
     if category_id:
         query["category_id"] = category_id
     if q:
+        rq = re.escape(q)
         query["$or"] = [
-            {"name": {"$regex": q, "$options": "i"}},
-            {"code": {"$regex": q, "$options": "i"}},
-            {"barcode": {"$regex": q, "$options": "i"}},
+            {"name": {"$regex": rq, "$options": "i"}},
+            {"code": {"$regex": rq, "$options": "i"}},
+            {"barcode": {"$regex": rq, "$options": "i"}},
         ]
     items = await db.products.find(query, {"_id": 0}).sort("name", 1).to_list(5000)
     if low_stock:
@@ -329,7 +347,8 @@ async def create_product(data: ProductCreate):
         cat = await db.categories.find_one({"id": data.category_id})
         if cat:
             cat_name = cat["name"]
-    code = data.code or f"P{int(datetime.now().timestamp())%100000:05d}"
+    await ensure_unique(data.code, data.barcode)
+    code = data.code or await next_product_code()
     p = Product(
         code=code,
         barcode=(data.barcode or "").strip(),
@@ -359,6 +378,7 @@ async def update_product(pid: str, data: ProductCreate):
     if data.category_id and data.category_id != existing.get("category_id"):
         cat = await db.categories.find_one({"id": data.category_id})
         cat_name = cat["name"] if cat else ""
+    await ensure_unique(data.code, data.barcode, exclude_id=pid)
     stock_delta = int(data.stock) - int(existing.get("stock", 0))
     upd = {
         "code": data.code or existing["code"],
@@ -531,7 +551,7 @@ async def list_sales(start: Optional[str] = None, end: Optional[str] = None,
             rng["$lte"] = end
         query["created_at"] = rng
     if q:
-        query["sale_no"] = {"$regex": q, "$options": "i"}
+        query["sale_no"] = {"$regex": re.escape(q), "$options": "i"}
     docs = await db.sales.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return docs
 
@@ -582,7 +602,7 @@ async def create_purchase(data: PurchaseCreate):
         "supplier_name": data.supplier_name or "",
         "created_at": created,
         "total": total,
-        "status": "diterima" if data.received else "menunggu",
+        "status": "menunggu",
         "note": data.note or "",
     }
     await db.purchases.insert_one(doc)
@@ -768,7 +788,7 @@ async def report_sales(start_date: Optional[str] = None, end_date: Optional[str]
         "omzet": sum(x["total"] for x in sales),
         "transactions": len(sales),
         "gross_profit": sum(x.get("gross_profit", 0) for x in sales),
-        "discount": sum(x.get("global_discount", 0) for x in sales),
+        "discount": sum(x.get("global_discount", 0) for x in sales) + sum(i.get("discount", 0) for i in items),
         "tax": sum(x.get("tax", 0) for x in sales),
     }
     return {"range": {"start": s, "end": e},

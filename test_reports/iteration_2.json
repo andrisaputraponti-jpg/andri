@@ -1,0 +1,72 @@
+{
+  "summary": "Iteration 2: retested POST /api/sales (now 200, fixed) + full backend CRUD (categories, products, stock adjust, purchases, settings below-cost guard, backup export/import roundtrip) via pytest (13 tests, 11 pass). Full frontend E2E on all 10 pages via Playwright. One CRITICAL bug found: purchases created with received=true (the DEFAULT in the UI) never add stock. One minor 500 on regex special chars in product search. Several minor design issues.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/purchases (received=true)", "issue": "Stock and cost_price are NOT updated. create_purchase inserts the doc with status='diterima' and then calls _receive_purchase(), which returns early because status is already 'diterima'. Verified via API (stock stayed 20 instead of 25) and UI (Pembelian modal with default checked 'Tandai sudah diterima' -> status Diterima but Gula stock stayed 40). No 'pembelian' stock movement recorded either. Fix: insert with status 'menunggu' and let _receive_purchase flip it, or apply stock update inline.", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/products?q=(abc", "issue": "Returns 500 - q is passed unescaped into $regex (invalid regex). Use re.escape(q). Kasir search box / Barang search will 500 if user types '(' '[' '*' etc."},
+      {"endpoint": "GET /api/reports/sales", "issue": "totals.discount only sums global_discount; per-line item discounts are excluded from 'Diskon' total (Laporan showed Rp2.500 while actual discounts were Rp8.000)."},
+      {"endpoint": "POST /api/products", "issue": "Auto code uses timestamp%100000 - no uniqueness check; barcode uniqueness also not enforced (duplicate barcodes make by-barcode lookup ambiguous)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Pembelian modal", "issue": "Default 'Tandai sudah diterima' checked -> due to backend bug, every default purchase is marked Diterima without adding stock (data corruption for inventory).", "selector": "[data-testid='purchase-received-toggle']", "priority": "CRITICAL"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Kasir & Daftar Barang search inputs", "issues": ["Search icon overlaps placeholder text ('Cari' renders as 'ari nama/kode...'). The .input class padding overrides Tailwind pl-9 - use !pl-9 or adjust CSS order."]},
+      {"screen": "Laporan header", "issues": ["Title is pushed down and the quick-period buttons, date inputs and CSV button are stacked vertically with full-width date inputs in the right half - header layout broken (should be a single row toolbar)."]},
+      {"screen": "Modals (Struk, Tambah Barang, Pembelian Baru)", "issues": ["Overlay does not cover the top ~13px of the viewport (white strip visible above dimmed area)."]},
+      {"screen": "Laporan/Riwayat/Beranda date filters", "issues": ["Native browser date pickers (input type=date, shows mm/dd/yyyy format in en locale) instead of shadcn Calendar; not Indonesian format."]},
+      {"screen": "Barang form", "issues": ["Harga Modal/Harga Jual inputs show raw '5000' without thousand separators, inconsistent with Kasir/Pembelian inputs which show '15.500'."]},
+      {"screen": "Kasir quick cash", "issues": ["Rp200.000 quick-cash button wraps alone onto a second line at 1920px."]}
+    ]
+  },
+  "passed_tests": [
+    "POST /api/sales happy path 200 with items, no _id; totals/discount/change/gross_profit correct; stock decremented; dashboard omzet increments",
+    "Sales: insufficient cash 400, insufficient stock 400, below-cost blocked 400 when allow_sell_below_cost=false",
+    "Categories create/update/delete, 404s, delete used -> 400 'Kategori digunakan oleh N barang', rename syncs product category_name",
+    "Products create (auto code P#####, stok_awal movement), update (penyesuaian_edit movement), hard delete, soft delete when sales exist",
+    "Stock adjust +/-, negative blocked 400, 404 unknown product",
+    "Purchases received=false -> menunggu, receive adds stock + WAC cost (1000@10 + 2000@10 -> 1500), receive idempotent, delete received 400, delete pending ok, empty items 400",
+    "Backup export -> import roundtrip counts match; invalid import 400",
+    "UI Kasir: barcode autofocus, scan adds Beras, re-scan increments qty, unknown barcode Indonesian error, product card click adds, qty/price/discount/global discount edits, Uang Pas, kembalian, checkout -> receipt modal, ESC/POS .bin download, cart cleared",
+    "UI Beranda omzet updated after sale (Rp160.000 -> Rp367.500)",
+    "UI Barang add/edit/delete via modal with confirm",
+    "UI Kategori add/edit/delete; deleting used category shows alert",
+    "UI Persediaan adjustment updates history; negative shows 'Stok tidak boleh negatif'",
+    "UI Pembelian pending purchase + confirm button adds stock",
+    "UI Riwayat lists sales, eye opens receipt",
+    "UI Laporan totals, Hari Ini/7 Hari/Bulan Ini update dates, CSV download",
+    "UI Pengaturan store_name persists; sidebar updates after navigation (not immediately)",
+    "UI Cadangkan export downloads JSON; import button visible"
+  ],
+  "test_report_links": ["/app/backend/tests/test_pos_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "CRITICAL: Fix POST /api/purchases with received=true - insert as 'menunggu' then call _receive_purchase (currently stock never increases)",
+    "Escape regex in GET /api/products q param (re.escape) to avoid 500",
+    "Include line-item discounts in report totals.discount",
+    "Fix search input icon overlapping placeholder (Kasir, Barang)",
+    "Fix Laporan header toolbar layout",
+    "Fix modal overlay top gap",
+    "Add data-testid to Kategori row edit/delete buttons and Pembelian item qty/cost/remove inputs"
+  ],
+  "critical_code_review_comments": [
+    "create_purchase/_receive_purchase status check makes received=true a no-op (see critical)",
+    "create_sale is not atomic: stock check and $inc are separate; concurrent sales can oversell. Use conditional update {stock: {$gte: qty}}",
+    "Dates use UTC for 'today' while UI shows WIB; sales between 00:00-07:00 WIB fall into previous UTC day on Beranda/Laporan/Riwayat",
+    "tax_percent is trusted from client instead of settings.tax_percent",
+    "backup_import deletes all collections before inserting with no validation/transaction - a malformed payload can wipe data",
+    "server.py is 860 lines - consider splitting into routers"
+  ],
+  "updated_files": ["/app/backend/tests/test_pos_api.py"],
+  "success_rate": {"backend": "85% (11/13)", "frontend": "95% (all requested flows work; purchase received-by-default flow corrupts stock)"},
+  "test_credentials": "None - no authentication",
+  "seed_data_creation": "Test sales TRX-...-0003..0006 and purchases BLI-...0001..0009 created (received ones cannot be deleted). Inactive TEST_SaleProd products (soft-deleted). Gula stock restored to 30; pending purchases deleted; settings restored to store_name 'Toko Serba Ada', allow_sell_below_cost=true.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run pytest with '-n 0' (pytest.ini enables xdist; backup import test wipes/restores collections and races with parallel tests). Backend tests in /app/backend/tests/test_pos_api.py. Expected failures until fixed: test_regex_special_chars_search, test_pending_receive_wac_delete (received=True step). Native confirm/alert dialogs need page.on('dialog') accept.",
+  "rca of the issue": "POST /api/purchases received=true: doc['status'] = 'diterima' if data.received is set BEFORE insert; then _receive_purchase() checks `if pur.get('status') == 'diterima': return` and exits without touching stock. Repro: POST /api/purchases {received:true, items:[{product_id, qty:5, cost_price:1500}]} -> status 'diterima', product stock unchanged. Mitigation: always insert with status 'menunggu' then await _receive_purchase(pur_id)."
+}

@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Save } from "lucide-react";
 
+const Field = ({ label, children }) => (
+  <label className="text-xs block"><span className="font-semibold text-slate-700">{label}</span>{children}</label>
+);
+
 export default function Pengaturan() {
   const [s, setS] = useState(null);
   const [msg, setMsg] = useState("");
@@ -12,12 +16,9 @@ export default function Pengaturan() {
   const save = async () => {
     const upd = await api.updateSettings(s);
     setS(upd); setMsg("Pengaturan disimpan.");
+    window.dispatchEvent(new Event("settings-updated"));
     setTimeout(() => setMsg(""), 2000);
   };
-
-  const Field = ({ label, children }) => (
-    <label className="text-xs block"><span className="font-semibold text-slate-700">{label}</span>{children}</label>
-  );
 
   return (
     <div className="p-6 space-y-4 max-w-3xl" data-testid="page-pengaturan">
