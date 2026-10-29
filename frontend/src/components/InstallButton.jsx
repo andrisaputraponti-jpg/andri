@@ -22,11 +22,15 @@ export default function InstallButton() {
 
   const install = async () => {
     if (!prompt) { setHelp(true); return; }
-    prompt.prompt();
-    const { outcome } = await prompt.userChoice;
+    try {
+      prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      if (outcome === "accepted") setInstalled(true);
+    } catch {
+      setHelp(true);
+    }
     window.__installPrompt = null;
     setPrompt(null);
-    if (outcome === "accepted") setInstalled(true);
   };
 
   const inFrame = window.self !== window.top;
