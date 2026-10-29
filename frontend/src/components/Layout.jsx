@@ -5,6 +5,7 @@ import {
   Truck, Receipt, BarChart3, Settings, Database, Store, Scan, Printer, Clock, Barcode, Wifi, WifiOff, CloudUpload,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import InstallButton from "@/components/InstallButton";
 import { cache, useConnection, retryFailed } from "@/lib/offline";
 import { formatTanggalLengkap, formatJam } from "@/lib/format";
 
@@ -81,8 +82,9 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="px-4 py-3 border-t border-slate-800 text-[11px] text-slate-500">
-          Kasir Toko Serba Ada v1.0
+        <div className="px-4 py-3 border-t border-slate-800 space-y-2">
+          <InstallButton />
+          <div className="text-[11px] text-slate-500">Kasir Toko Serba Ada v1.0</div>
         </div>
       </aside>
 

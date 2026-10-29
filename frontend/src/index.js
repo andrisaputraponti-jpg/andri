@@ -15,6 +15,11 @@ const queryClient = new QueryClient({
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 if ("serviceWorker" in navigator) {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    window.__installPrompt = e;
+    window.dispatchEvent(new Event("install-ready"));
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/service-worker.js").catch(() => {});
     navigator.serviceWorker.ready.then((reg) => {
